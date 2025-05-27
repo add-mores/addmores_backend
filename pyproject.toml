@@ -16,7 +16,7 @@ build-backend = "pdm.backend"
 
 
 [tool.pdm]
-distribution = true
+distribution = false
 
 [dependency-groups]
 streamlit = [
