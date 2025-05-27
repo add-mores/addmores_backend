@@ -40,9 +40,12 @@ def filter_hospitals(req: FilterRequest):
     df = pd.read_sql(query, engine).dropna(subset=["lat", "lon"])
     df["distance"] = haversine(req.lat, req.lon, df["lat"].values, df["lon"].values)
 
-    if req.deps:
+    # 진료과 필터
+    if req.deps and req.deps != ["string"]:
         df = df[df["deps"].apply(lambda t: any(dept.strip() in t.split(",") for dept in req.deps if t))]
-    if req.search_name:
+
+    # 병원명 필터
+    if req.search_name and req.search_name != "string":
         df = df[df["hos_nm"].str.contains(req.search_name, case=False, na=False)]
 
     df = df[df["distance"] <= req.radius].sort_values("distance")
