@@ -1,12 +1,13 @@
 # ~/backend/app/api/disease_api.py
 """
-질병 추천 API - 정확도 및 성능 개선 버전
+질병 추천 API - 정확도 및 성능 개선 버전 + 상세 정보 포함
 
 주요 개선사항:
 1. 형태소 분석 정확도 향상 (의학 용어 패턴 확장)
 2. 의학 용어 매핑 알고리즘 효율화
 3. 불용어 처리 강화
 4. 유사도 계산 최적화
+5. 질병 정의, 증상, 치료법 정보 추가
 """
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -43,7 +44,7 @@ _is_initialized = False
 # Okt 형태소 분석기 초기화
 okt = Okt()
 
-# 요청/응답 모델
+# 요청/응답 모델 - 상세 정보 추가
 class DiseaseRecommendRequest(BaseModel):
     original_text: str
     positive: List[str] = []
@@ -52,10 +53,14 @@ class DiseaseRecommendRequest(BaseModel):
 class DiseaseRecommendation(BaseModel):
     disease_id: str
     disease_name_ko: str
+    disease_name_en: Optional[str] = None    # 추가: 영문명
     department: Optional[str] = None
     similarity_score: float
     final_score: float
     matched_tokens: List[str] = []
+    definition: Optional[str] = None         # 추가: 질병 정의
+    symptoms: Optional[str] = None           # 추가: 증상
+    therapy: Optional[str] = None            # 추가: 치료법
 
 class DiseaseRecommendResponse(BaseModel):
     recommendations: List[DiseaseRecommendation]
@@ -513,7 +518,7 @@ def load_medical_mappings(db: Session) -> Dict[str, str]:
     except Exception as e:
         logger.error(f"매핑 사전 로드 실패: {str(e)}")
         return {}
-
+    
 def load_tfidf_components(db: Session) -> bool:
     """TF-IDF 벡터화에 필요한 컴포넌트들 로드"""
     global _tfidf_vectorizer, _tfidf_vocabulary, _tfidf_idf_weights
@@ -652,25 +657,31 @@ def vectorize_tokens(tokens: List[str]) -> Optional[np.ndarray]:
         return create_fallback_vector(tokens)
 
 def load_disease_vectors(db: Session, limit: int = 100) -> List[Dict[str, Any]]:
-    """질병 벡터들을 DB에서 로드"""
+    """질병 벡터들을 DB에서 로드 (상세 정보 포함)"""
     global _disease_vectors_cache
-    
+
     try:
         if _disease_vectors_cache:
             return _disease_vectors_cache[:limit]
         
-        logger.info("질병 벡터 로드 시작")
+        logger.info("질병 벡터 로드 시작 (상세 정보 포함)")
         
+        # 정확한 스키마 기반 쿼리 - disv2 테이블과 JOIN
         query = text("""
             SELECT 
-                disease_id,
-                disease_name_ko,
-                department,
-                tfidf_vector,
-                vector_norm
-            FROM disease_vectors 
-            WHERE vector_norm > 0 
-            ORDER BY non_zero_count DESC
+                dv.disease_id,
+                dv.disease_name_ko,
+                dv.disease_name_en,
+                dv.department,
+                dv.tfidf_vector,
+                dv.vector_norm,
+                d.def,                -- 정의
+                d.symptoms,           -- 증상  
+                d.therapy             -- 치료법
+            FROM disease_vectors dv
+            LEFT JOIN disv2 d ON dv.disease_name_ko = d.disnm_ko
+            WHERE dv.vector_norm > 0 
+            ORDER BY dv.non_zero_count DESC
             LIMIT :limit
         """)
         
@@ -691,16 +702,41 @@ def load_disease_vectors(db: Session, limit: int = 100) -> List[Dict[str, Any]]:
                 norm = np.linalg.norm(dense_vector)
                 if norm > 0:
                     dense_vector = dense_vector / norm
-                
+                    
+                    # 치료법 정보 정제 (비어있거나 None인 경우 처리)
+                    therapy = row.therapy
+                    if therapy and isinstance(therapy, str) and therapy.strip():
+                        therapy = therapy.strip()
+                    else:
+                        therapy = None
+                    
+                    # 정의 정보 정제
+                    definition = getattr(row, 'def', None)
+                    if definition and isinstance(definition, str) and definition.strip():
+                        definition = definition.strip()
+                    else:
+                        definition = None
+                    
+                    # 증상 정보 정제
+                    symptoms = row.symptoms
+                    if symptoms and isinstance(symptoms, str) and symptoms.strip():
+                        symptoms = symptoms.strip()
+                    else:
+                        symptoms = None
+                    
                     _disease_vectors_cache.append({
                         'disease_id': row.disease_id,
                         'disease_name_ko': row.disease_name_ko,
+                        'disease_name_en': row.disease_name_en,     # disease_vectors에서 직접
                         'department': row.department,
-                        'vector': dense_vector
+                        'vector': dense_vector,
+                        'definition': definition,                   # disv2.def
+                        'symptoms': symptoms,                       # disv2.symptoms
+                        'therapy': therapy                          # disv2.therapy
                     })
                 
-            except Exception as e:
-                logger.warning(f"벡터 파싱 실패 (ID: {row.disease_id}): {str(e)}")
+            except Exception as vector_error:
+                logger.warning(f"벡터 파싱 실패 (ID: {row.disease_id}): {str(vector_error)}")
                 continue
         
         logger.info(f"질병 벡터 로드 완료: {len(_disease_vectors_cache)}개")
@@ -829,13 +865,13 @@ def initialize_all_components(db: Session) -> bool:
     except Exception as e:
         logger.error(f"초기화 실패: {str(e)}")
         return False
-    
+
 @router.post("/disease", response_model=DiseaseRecommendResponse)
 async def recommend_diseases(
     request: DiseaseRecommendRequest,
     db: Session = Depends(get_db)
 ):
-    """질병 추천 메인 엔드포인트 (의학적 맥락 고려)"""
+    """질병 추천 메인 엔드포인트 (상세 정보 포함)"""
     try:
         logger.info(f"질병 추천 요청: '{request.original_text}'")
         start_time = time.time()
@@ -917,10 +953,14 @@ async def recommend_diseases(
                 recommendations.append(DiseaseRecommendation(
                     disease_id=disease['disease_id'],
                     disease_name_ko=disease['disease_name_ko'],
+                    disease_name_en=disease.get('disease_name_en'),        # 영문명 추가
                     department=disease.get('department'),
                     similarity_score=pos_similarity,
                     final_score=final_score,
-                    matched_tokens=final_positive_tokens
+                    matched_tokens=final_positive_tokens,
+                    definition=disease.get('definition'),                  # 정의 추가
+                    symptoms=disease.get('symptoms'),                      # 증상 추가
+                    therapy=disease.get('therapy')                         # 치료법 추가
                 ))
         
         # 8. 정렬 및 상위 5개만 반환
@@ -954,8 +994,9 @@ async def get_system_status(db: Session = Depends(get_db)):
             "vocabulary_size": len(_tfidf_vocabulary),
             "disease_vectors_count": len(_disease_vectors_cache),
             "tfidf_ready": _tfidf_vectorizer is not None,
-            "version": "2.0.0",
-            "last_update": "2025-05-23"
+            "version": "2.1.0",  # 상세 정보 포함 버전
+            "last_update": "2025-05-27",
+            "features": ["상세 질병 정보", "정의/증상/치료법 포함", "개선된 매핑"]
         }
         
     except Exception as e:
@@ -985,9 +1026,55 @@ async def manual_initialize(db: Session = Depends(get_db)):
             "vocabulary_size": len(_tfidf_vocabulary),
             "disease_vectors_count": len(_disease_vectors_cache),
             "tfidf_ready": _tfidf_vectorizer is not None,
-            "processing_time": f"{time.time() - start_time:.3f}초"
+            "processing_time": f"{time.time() - start_time:.3f}초",
+            "features_loaded": ["질병 상세 정보", "정의", "증상", "치료법"]
         }
         
     except Exception as e:
         logger.error(f"수동 초기화 중 오류: {str(e)}")
+        return {"error": str(e)}
+
+@router.get("/schema-check")
+async def check_database_schema(db: Session = Depends(get_db)):
+    """데이터베이스 스키마 확인 (개발용)"""
+    try:
+        # 테이블 목록 확인
+        tables_query = text("""
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public'
+            AND table_type = 'BASE TABLE'
+            ORDER BY table_name
+        """)
+        tables = db.execute(tables_query).fetchall()
+        
+        schema_info = {}
+        
+        # 주요 테이블들의 컬럼 정보 확인
+        important_tables = ['disease_vectors', 'disv2', 'disease', 'medical_term_mappings']
+        
+        for table_name in important_tables:
+            columns_query = text(f"""
+                SELECT column_name, data_type, is_nullable
+                FROM information_schema.columns 
+                WHERE table_name = '{table_name}'
+                ORDER BY ordinal_position
+            """)
+            columns = db.execute(columns_query).fetchall()
+            
+            if columns:
+                schema_info[table_name] = [
+                    {
+                        "column_name": col.column_name,
+                        "data_type": col.data_type,
+                        "is_nullable": col.is_nullable
+                    } for col in columns
+                ]
+        
+        return {
+            "all_tables": [table.table_name for table in tables],
+            "schema_details": schema_info
+        }
+        
+    except Exception as e:
         return {"error": str(e)}
