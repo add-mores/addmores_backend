@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 # 각 API 라우터 import
 from app.api import insert_api     # 입력 API (api/insert)
-# from app.api import disease_api     # 질병 API (api/disease)
+from app.api import disease_api     # 질병 API (api/disease)
 from app.api import medicine_api  # 의약품 API (api/medicine)
 from app.api import hospital_api    # 병원 API (api/hospital)
 
@@ -51,11 +51,11 @@ app.include_router(
     prefix="",  # /api/insert 그대로 사용
 )
 
-# app.include_router(
-#     disease_api.router, 
-#     tags=["질병 추천"],
-#     prefix="",  # /api/disease 그대로 사용
-# )
+app.include_router(
+    disease_api.router, 
+    tags=["질병 추천"],
+    prefix="",  # /api/disease 그대로 사용
+)
 
 app.include_router(
     medicine_api.router, 
