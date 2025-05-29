@@ -27,7 +27,7 @@
 | 데이터 처리    | Pandas, scikit-learn(TensorFlow), TF-IDF, Cosine Similarity |
 | NLP 전처리   | KoNLPy (Okt), NLTK                        |
 | API 서버    | FastAPI                                   |
-| 대시보드     | Streamlit (추후 변경)                   |
+| 대시보드     | Next.js (추후 변경)                   |
 | 자동화       | Apache Airflow (Open API 주기적 수집)      |
 | 데이터베이스   | NeonDB (PostgreSQL), AWS S3               |
 | 배포 환경     | Docker, AWS EC2, Nginx                   |
@@ -49,7 +49,7 @@
 
 | 기능          | 설명                                     |
 |--------------|----------------------------------------|
-| 증상 입력      | Streamlit 기반의 사용자 증상 입력 UI 제공 (추후 변경)      |
+| 증상 입력      | Next.js 기반으로 대시보드 생성성      |
 | 질병 추천      | TF-IDF 및 Cosine Similarity 기반의 유사 질병 추천 |
 | 병원 추천      | 사용자 위치 및 진료과 기반 인근 의료기관 추천     |
 | 의약품 추천    | 추천된 질병에 알맞는 의약품을 같이 제시           |
@@ -62,7 +62,7 @@
 
 ### 🎯 필수 기능
 - 증상 입력 → 유사 질병 Top-N 추천
-- 건강 정보 결과 시각화 → FastAPI 및 Streamlit 활용
+- 건강 정보 결과 시각화 → FastAPI 및 Next.js 활용
 - 병원 추천 → 사용자 위치 및 진료과 기반 필터링
 
 ### 🔄 기능 흐름도
