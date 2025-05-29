@@ -27,7 +27,7 @@
 | 데이터 처리    | Pandas, scikit-learn(TensorFlow), TF-IDF, Cosine Similarity |
 | NLP 전처리   | KoNLPy (Okt), NLTK                        |
 | API 서버    | FastAPI                                   |
-| 대시보드     | Next.js (추후 변경)                   |
+| 대시보드     | Next.js                    |
 | 자동화       | Apache Airflow (Open API 주기적 수집)      |
 | 데이터베이스   | NeonDB (PostgreSQL), AWS S3               |
 | 배포 환경     | Docker, AWS EC2, Nginx                   |
