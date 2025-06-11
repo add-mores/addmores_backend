@@ -13,8 +13,8 @@ load_dotenv()
 router = APIRouter()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-KAKAO_API_KEY = os.getenv("KAKAO_API_KEY")
-headers = {"Authorization": f"KakaoAK {KAKAO_API_KEY}"}
+NAVER_MAP_ID     = os.getenv("NEXT_PUBLIC_MAP_CLIENT_ID")
+NAVER_MAP_SECRET = os.getenv("NEXT_PUBLIC_MAP_CLIENT_SECRET")
 engine = create_engine(DATABASE_URL)
 
 def haversine(lat1, lon1, lat2s, lon2s):
@@ -73,21 +73,23 @@ def list_departments():
     return sorted(all_depts)
 
 @router.get("/geocode")
-def geocode_address(query: str = Query(...)):
-    url = "https://dapi.kakao.com/v2/local/search/address.json"
-    try:
-        res = requests.get(url, headers=headers, params={"query": query})
-        res.raise_for_status()
-        data = res.json()
-        docs = data.get("documents")
-        if docs:
-            return {
-                "lat": float(docs[0]["y"]),
-                "lon": float(docs[0]["x"]),
-                "address_name": docs[0].get("address_name")
-            }
-        return {"error": f"주소를 찾을 수 없습니다. Kakao 응답: {data}"}
-    except Exception as e:
-        return {"error": str(e)}
+def geocode_address(query: str = Query(...)) -> Dict[str, Any]:
+    base = "https://maps.apigw.ntruss.com/map-geocode/v2/geocode"
+    headers = {
+        "X-NCP-APIGW-API-KEY-ID": NAVER_MAP_ID,
+        "X-NCP-APIGW-API-KEY":    NAVER_MAP_SECRET
+    }
+    r = requests.get(base, headers=headers, params={"query": query}, timeout=10)
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail=r.text)
+    arr = r.json().get("addresses", [])
+    if not arr:
+        raise HTTPException(status_code=404, detail="주소를 찾을 수 없습니다.")
+    a = arr[0]
+    return {
+        "lat": float(a["y"]),
+        "lon": float(a["x"]),
+        "address_name": a.get("roadAddress") or a.get("jibunAddress")
+    }
 
 
