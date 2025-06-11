@@ -105,7 +105,7 @@ while True:
             age_group = input("연령대가 어떻게 되시나요? (소아, 청소년, 성인, 노인): ").strip()
             if age_group.lower() == 'q':
                 continue
-            pregnant_input = input("현재 임신 중이신가요? (예/아니오): ").strip()
+            pregnant_input = input("현재 임신 중이신가요? (예/아니요): ").strip()
             if pregnant_input.lower() == 'q':
                 continue
             chronic_input = input("앓고 있는 기저질환이 있다면 알려주세요 (쉼표로 구분, 없으면 엔터): ").strip()
@@ -120,7 +120,7 @@ while True:
 
             if not filtered_docs:
                 print("⚠️ 조건에 맞는 약이 없어 더 많은 후보를 확인합니다...")
-                extended_docs = vectordb.similarity_search(symptom_query, k=100)
+                extended_docs = vectordb.similarity_search(symptom_query, k=70)
                 filtered_docs = [doc for doc in extended_docs if condition_filter(doc, age_group, is_pregnant, chronic_conditions)]
 
             if not filtered_docs:
