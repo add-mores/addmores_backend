@@ -4,7 +4,7 @@ from langchain.vectorstores import FAISS
 from langchain.embeddings import HuggingFaceEmbeddings
 
 # 1) CSV 경로
-csv_path = "/home/jiwon/temp/addmore/docs/testmed.csv"
+csv_path = "./testmed.csv"
 print(f"CSV 파일 경로: {csv_path}")
 
 # 2) CSV 불러오기
