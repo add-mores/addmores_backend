@@ -162,7 +162,7 @@ cython_debug/
 #.idea/
 
 # csv
-pages/*.csv
+*.csv
 
 #.DS_Store
 .DS_Store
