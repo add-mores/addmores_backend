@@ -173,3 +173,9 @@ notebook/*.ipynb
 #docker
 Dockerfile
 .dockerignore
+
+#FAISS INDEX
+*.faiss
+*.index
+*.pkl
+index_config.json
