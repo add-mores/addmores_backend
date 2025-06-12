@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from typing import Dict, Any
 from pydantic import BaseModel
 from typing import List, Optional
 from sqlalchemy import create_engine
@@ -59,7 +60,7 @@ def filter_hospitals(req: FilterRequest):
             "lon": row["lon"],
             "distance": round(row["distance"], 2)
         })
-    return records
+    return {"recommendations": records}
 
 @router.get("/list_departments")
 def list_departments():
