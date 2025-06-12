@@ -6,7 +6,7 @@ import re
 
 # 모델 및 벡터 DB 로딩
 embedding_model_name = "madatnlp/km-bert"
-faiss_index_path = "./faiss_index"
+faiss_index_path = "./medi_faiss_index"
 embeddings = HuggingFaceEmbeddings(model_name=embedding_model_name)
 vectordb = FAISS.load_local(faiss_index_path, embeddings, allow_dangerous_deserialization=True)
 retriever = vectordb.as_retriever(search_type="similarity", search_kwargs={"k": 5})

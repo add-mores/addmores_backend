@@ -47,7 +47,7 @@ print("임베딩 및 FAISS 인덱스 생성 중...")
 vectordb = FAISS.from_documents(docs, embeddings)
 
 # 7) 인덱스 저장
-faiss_index_path = "./faiss_index"
+faiss_index_path = "./medi_faiss_index"
 vectordb.save_local(faiss_index_path)
 print(f"FAISS 인덱스가 '{faiss_index_path}' 폴더에 저장되었습니다.")
 
