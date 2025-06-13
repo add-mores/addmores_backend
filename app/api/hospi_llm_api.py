@@ -12,8 +12,16 @@ from dotenv import load_dotenv
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_ollama import OllamaLLM
+import logging
 
 load_dotenv()
+# 로깅 설정
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+logger = logging.getLogger(__name__)
+
 NAVER_MAP_ID = os.getenv("NEXT_PUBLIC_MAP_CLIENT_ID")
 NAVER_MAP_SECRET = os.getenv("NEXT_PUBLIC_MAP_CLIENT_SECRET")
 
@@ -54,8 +62,8 @@ def exaone_chat(msgs: List[Dict[str, Any]]) -> str:
 def make_web_map_url(name: str) -> str:
     return f"https://map.naver.com/v5/search/{urllib.parse.quote(name)}"
 
-def generate_llm_reason(symptom: str, hospitals: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    prompt = {"symptom": symptom, "candidates": hospitals}
+def generate_llm_reason(query: str, hospitals: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    prompt = {"query": query, "candidates": hospitals}
     msgs = [
         {"role": "system", "content":
          "다음은 증상과 병원 정보입니다. 각 병원이 왜 추천되었는지 간단하고 명확한 추천 사유를 JSON 배열로 생성하세요. "
@@ -64,7 +72,8 @@ def generate_llm_reason(symptom: str, hospitals: List[Dict[str, Any]]) -> List[D
     ]
     try:
         raw = exaone_chat(msgs).strip()
-        print("🧠 LLM 응답 원문:\n", raw)
+        # print("🧠 LLM 응답 원문:\n", raw)
+        logger.info(f"🧠 LLM 응답 원문:\n{raw}")
         clean = re.sub(r"```(?:json)?\s*(.*?)\s*```", r"\1", raw, flags=re.S).strip()
         if not clean.startswith("["): raise ValueError("응답이 JSON 배열 아님")
         parsed = json.loads(clean)
@@ -79,7 +88,8 @@ def generate_llm_reason(symptom: str, hospitals: List[Dict[str, Any]]) -> List[D
                 item.setdefault("map_url", make_web_map_url(item["hos_nm"]))
         return parsed
     except Exception as e:
-        print("❌ LLM 요약 실패:", e)
+        # print("❌ LLM 요약 실패:", e)/
+        logger.error(f"❌ LLM 요약 실패: {e}")
         return [
             {
                 "hos_nm": h["hos_nm"],
@@ -95,7 +105,7 @@ def generate_llm_reason(symptom: str, hospitals: List[Dict[str, Any]]) -> List[D
 
 class FilterRequest(BaseModel):
     address: str
-    symptom: str
+    query: str
     radius: float = 1.0
 
 @router.post("/llm/hospital")
@@ -105,28 +115,31 @@ def recommend(req: FilterRequest):
 
     messages = [
         {"role": "system", "content": "증상에서 예상 진료과를 JSON 배열로만 출력하세요. 각 항목은 {'department': ..., 'score': ...} 형식. 마크다운 없이."},
-        {"role": "user", "content": req.symptom}
+        {"role": "user", "content": req.query}
     ]
     try:
         resp = exaone_chat(messages).strip()
-        print("🧠 예측 응답:", resp)
+        # print("🧠 예측 응답:", resp)
+        logger.info(f"🧠 예측 응답: {resp}")
         if resp.lstrip().startswith("[{") and "'" in resp:
             preds = ast.literal_eval(resp)
         else:
             preds = json.loads(resp[resp.find("["):resp.rfind("]")+1])
     except Exception as e:
-        print("❌ 진료과 예측 실패:", e)
+        # print("❌ 진료과 예측 실패:", e)
+        logger.error(f"❌ LLM 요약 실패: {e}")
+        
         preds = []
 
     if not preds:
         return {
             "predicted_deps": [],
             "llm_summary": [],
-            "message": "증상이 너무 모호합니다. 다시 입력해주세요."
+            "message": "입력하신 증상으로는 추천할 수 있는 병원이 없습니다. 다시 시도해 주세요."
         }
 
     deps = [p["department"].replace(" ", "") for p in preds if "department" in p]
-    docs = vectordb.similarity_search(req.symptom, k=vectordb.index.ntotal)
+    docs = vectordb.similarity_search(" ".join(deps), k=vectordb.index.ntotal)
 
     cands = []
     for d in docs:
@@ -147,14 +160,25 @@ def recommend(req: FilterRequest):
     cands = sorted(cands, key=lambda x: x["distance"])[:10]
 
     if not cands:
-        return {
-            "predicted_deps": preds,
-            "llm_summary": [],
-            "message": "추천 가능한 병원이 없습니다."
-        }
+        all_docs = vectordb.similarity_search("병원", k=vectordb.index.ntotal)
+        for d in all_docs:
+            m = d.metadata
+            lat2, lon2 = float(m.get("lat", 0)), float(m.get("lon", 0))
+            dist = haversine(lat, lon, lat2, lon2)
+            dep_list = [x.replace(" ", "") for x in m.get("treatment", "").split(",") if x.strip()]
+            if any(dep in dep_list for dep in deps):
+                cands.append({
+                    "hos_nm": m.get("hospital_name", ""),
+                    "add": m.get("address", ""),
+                    "deps": dep_list,
+                    "distance": round(dist, 2),
+                    "lat": lat2,
+                    "lon": lon2
+                })
 
-    summary = generate_llm_reason(req.symptom, cands)[:3]
-    print(f"✅ 추천 병원 {len(summary)}개 생성 완료")
+    summary = generate_llm_reason(req.query, cands)[:3]
+    # print(f"✅ 추천 병원 {len(summary)}개 생성 완료")
+    logger.info(f"✅ 추천 병원 {len(summary)}개 생성 완료")
 
     return {
         "predicted_deps": preds,
