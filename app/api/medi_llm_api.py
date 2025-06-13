@@ -21,7 +21,7 @@ all_item_names = list({doc.metadata["item_name"] for doc in vectordb.docstore._d
 
 class RecommendationRequest(BaseModel):
     query: str
-    age_group: Optional[str] = "성인"
+    age_group: Optional[str] = None 
     is_pregnant: Optional[bool] = False
     chronic_conditions: Optional[List[str]] = []
 
