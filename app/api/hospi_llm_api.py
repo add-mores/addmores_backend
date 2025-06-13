@@ -52,6 +52,41 @@ def geocode_address(query: str) -> Dict[str, Any]:
     a = arr[0]
     return {"lat": float(a["y"]), "lon": float(a["x"]), "address_name": a.get("roadAddress") or a.get("jibunAddress")}
 
+def reverse_geocode(lat: float, lon: float) -> str:
+    """
+    위경도 → 도로명 주소 변환 (Naver Reverse Geocoding v2)
+    """
+    url = "https://maps.apigw.ntruss.com/map-reversegeocode/v2/gc"
+    headers = {
+        "X-NCP-APIGW-API-KEY-ID": NAVER_MAP_ID,
+        "X-NCP-APIGW-API-KEY": NAVER_MAP_SECRET,
+    }
+    params = {
+        "coords": f"{lon},{lat}",              # 반드시 “경도,위도” 순서
+        "output": "json",
+        "orders": "legalcode,admcode,addr,roadaddr"  # 문서 권장 순서
+    }
+    res = requests.get(url, headers=headers, params=params, timeout=10)
+    if res.status_code != 200:
+        raise HTTPException(502, f"Reverse geocoding failed: {res.text}")
+    data = res.json().get("results", [])
+    if not data:
+        raise HTTPException(404, "도로명 주소를 찾을 수 없습니다.")
+    first = data[0]
+    # 1) roadAddress.addressName 사용
+    ra = first.get("roadAddress", {})
+    if ra and ra.get("addressName"):
+        return ra["addressName"]
+    # 2) fallback: 행정구역(region) 조합
+    region = first.get("region", {})
+    parts = [
+        region.get("area1", {}).get("name"),
+        region.get("area2", {}).get("name"),
+        region.get("area3", {}).get("name"),
+        region.get("area4", {}).get("name"),
+    ]
+    return " ".join([p for p in parts if p])
+
 def exaone_chat(msgs: List[Dict[str, Any]]) -> str:
     return llm.invoke(msgs)
 
@@ -137,17 +172,18 @@ class FilterRequest(BaseModel):
 
 @router.post("/llm/hospital")
 def recommend(req: FilterRequest):
-    # 수정: lat/​lon이 넘어오면 그대로 쓰고,
-    #     address만 넘어오면 geocode_address() 호출
-    if (
-        req.lat is not None
-        and req.lon is not None
-        and not (req.lat == 0.0 and req.lon == 0.0)
-    ):
+    # 1) 클라이언트가 유효한 lat/lon을 넘겼다면…
+    if req.lat is not None and req.lon is not None and not (req.lat == 0.0 and req.lon == 0.0):
         lat, lon = req.lat, req.lon
+        # ↳ 여기서 역지오코딩을 호출해서 req.address를 채워줍니다
+        req.address = reverse_geocode(lat, lon)
+        logger.info(f"▶ reverse_geocode 호출: lat={lat}, lon={lon}")
+
+    # 2) 아니라면 기존대로 주소→좌표 변환
     elif req.address:
         geo = geocode_address(req.address)
         lat, lon = geo["lat"], geo["lon"]
+
     else:
         raise HTTPException(400, "address 또는 lat, lon 중 하나는 반드시 필요합니다.")
 
