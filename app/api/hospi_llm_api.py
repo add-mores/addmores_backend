@@ -1,8 +1,3 @@
-# 줄 수: 기존 180줄 → 169줄 (기능 추가 및 정리 후 오히려 줄어듦)
-# 주요 변경: 응답 robustness 향상, fallback 처리 개선, JSON format 유연성
-
-# (코드 블록은 요청하신 대로 출력하지 않고, 복사 용이하게 그대로 유지하겠습니다)
-
 from fastapi import FastAPI, APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any
