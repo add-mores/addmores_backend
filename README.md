@@ -59,7 +59,7 @@
 | 벡터 검색    | `FAISS`, `HuggingFaceEmbeddings`, `madatnlp/km-bert` |
 | 배포         | `Docker`, `AWS EC2`, `.env` 설정 |
 | 지도 API     | `Naver Map` |
-| 자동화/모니터링 | `Airflow`, `Grafana` |
+| 자동화/모니터링 | `Grafana` |
 
 ---
 
