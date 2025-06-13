@@ -177,4 +177,6 @@ Dockerfile
 #FAISS FILE
 *.index
 *.pkl
-
+LLM_code/hospital/faiss_index/index.faiss
+LLM_code/hospital/hospi_faiss_index_parallel/index.faiss
+app/api/hospi_faiss_index/index.faiss
