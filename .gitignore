@@ -173,3 +173,8 @@ notebook/*.ipynb
 #docker
 Dockerfile
 .dockerignore
+
+#FAISS FILE
+*.index
+*.pkl
+
