@@ -173,3 +173,8 @@ notebook/*.ipynb
 #docker
 Dockerfile
 .dockerignore
+
+#faiss_index
+LLM_code/hospital/faiss_index/
+LLM_code/hospital/hospi_faiss_index_parallel/
+app/api/hospi_faiss_index/
