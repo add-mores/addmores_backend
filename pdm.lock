@@ -5,7 +5,7 @@
 groups = ["default", "streamlit"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:b057b0cdcc06e7be4a7c5331a3d17886f23ae1f8baf940f034da4666b41c85b7"
+content_hash = "sha256:5d489376cfa9f4c0c9f18bff1652214c6b2bbeebd5d63558f2a1fca8b45892a0"
 
 [[metadata.targets]]
 requires_python = ">=3.12"
@@ -1382,6 +1382,37 @@ dependencies = [
 files = [
     {file = "langchain_core-0.3.65-py3-none-any.whl", hash = "sha256:80e8faf6e9f331f8ef728f3fe793549f1d3fb244fcf9e1bdcecab6a6f4669394"},
     {file = "langchain_core-0.3.65.tar.gz", hash = "sha256:54b5e0c8d9bb405415c3211da508ef9cfe0acbe5b490d1b4a15664408ee82d9b"},
+]
+
+[[package]]
+name = "langchain-huggingface"
+version = "0.3.0"
+requires_python = ">=3.9"
+summary = "An integration package connecting Hugging Face and LangChain."
+groups = ["default"]
+dependencies = [
+    "huggingface-hub>=0.30.2",
+    "langchain-core<1.0.0,>=0.3.65",
+    "tokenizers>=0.19.1",
+]
+files = [
+    {file = "langchain_huggingface-0.3.0-py3-none-any.whl", hash = "sha256:aab85d57e649c805d2f2a9f8d72d87b5d12c45dd4831309ac9c37753ddb237ed"},
+    {file = "langchain_huggingface-0.3.0.tar.gz", hash = "sha256:d1cf93fb4d4eafc8b44edcd5fba904b27cbd3fda6cdef0e2321fbcf4efcda822"},
+]
+
+[[package]]
+name = "langchain-ollama"
+version = "0.3.3"
+requires_python = ">=3.9"
+summary = "An integration package connecting Ollama and LangChain"
+groups = ["default"]
+dependencies = [
+    "langchain-core<1.0.0,>=0.3.60",
+    "ollama<1.0.0,>=0.4.8",
+]
+files = [
+    {file = "langchain_ollama-0.3.3-py3-none-any.whl", hash = "sha256:f1c745a4b59d36bb51995c23c6b0fbc20f71956715659425ab88639a14b213cd"},
+    {file = "langchain_ollama-0.3.3.tar.gz", hash = "sha256:7d6ed75bfb706751b83173fe886b72ae25bb0b1bd7f3eb2622821c4149f7807b"},
 ]
 
 [[package]]

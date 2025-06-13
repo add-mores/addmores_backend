@@ -21,6 +21,7 @@ from app.api import disease_api    # 질병 API (api/disease) - 질병 예측
 from app.api import medicine_api   # 의약품 API (api/medicine) - 의약품 추천
 from app.api import hospital_api   # 병원 API (api/hospital) - 병원 추천
 
+
 # ========== LLM API 라우터 import ==========
 from app.api import medi_llm_api   # 의약품 LLM API (llm/medicine)
 from app.api import hospi_llm_api  # 병원 LLM API (llm/hospital)
@@ -83,8 +84,6 @@ app.include_router(
     tags=["질병 예측"],
     prefix="",  # /api/disease 그대로 사용
 )
-
-# 3️⃣ 의약품 추천 API (기본)
 app.include_router(
     medicine_api.router, 
     tags=["의약품 추천"],
@@ -100,19 +99,23 @@ app.include_router(
 
 # 5️⃣ 병원 추천 API (기본)
 app.include_router(
+    medi_llm_api.router, 
+    tags=["의약품 추천 LLM"],
+    prefix="",  # /llm/medicine 그대로 사용
+)
+
+app.include_router(
     hospital_api.router, 
     tags=["병원 추천"],
     prefix="",  # /api/hospital 그대로 사용
 )
 
-# 6️⃣ 병원 추천 API (LLM)
 app.include_router(
     hospi_llm_api.router, 
     tags=["병원 추천 LLM"],
     prefix="",  # /llm/hospital 그대로 사용
 )
 
-# 7️⃣ 🆕 LLM 질병 API 라우터 (조건부 등록)
 if LLM_DISEASE_AVAILABLE:
     app.include_router(
         disease_llm_router,
@@ -122,6 +125,7 @@ if LLM_DISEASE_AVAILABLE:
     logger.info("✅ LLM 질병 API 라우터 등록 완료")
 
 # ========== 루트 엔드포인트 ==========
+
 @app.get("/")
 async def root():
     """API 서버 상태 확인 및 사용 가능한 엔드포인트 안내"""
@@ -148,7 +152,18 @@ async def root():
         "version": "1.0.0",
         "status": "running",
         "timestamp": datetime.now().isoformat(),
-        "endpoints": endpoints
+
+        "endpoints": {
+            "증상 처리": "/api/insert",
+            "질병 추천": "/api/disease", 
+            "질병 추천 llm": "/llm/disease",
+            "의약품 추천": "/api/medicine",
+            "의약품 추천 llm": "/llm/medicine",
+            "병원 추천": "/api/hospital",
+            "병원 추천 llm": "/llm/hospital",
+            "API 문서": "/docs",
+            "ReDoc 문서": "/redoc"
+        }
     }
 
 # ========== 전체 시스템 헬스 체크 ==========
@@ -178,12 +193,10 @@ async def health_check():
 @app.get("/api")
 async def api_list():
     """사용 가능한 모든 API 엔드포인트 목록 및 사용법"""
-    
-    # 기본 API 엔드포인트들
     endpoints = [
         {
             "path": "/api/insert",
-            "method": "POST", 
+            "method": "POST",
             "description": "사용자 증상 입력 및 긍정/부정 세그먼트 분리",
             "input": "{ text: '증상 설명' }",
             "output": "{ original_text, positive, negative }"
@@ -196,7 +209,7 @@ async def api_list():
             "output": "{ diseases, departments, disease_names }"
         },
         {
-            "path": "/api/medicine", 
+            "path": "/api/medicine",
             "method": "POST",
             "description": "증상 기반 의약품 추천",
             "input": "{ disease_names: [...] }",
@@ -227,14 +240,14 @@ async def api_list():
         },
         {
             "path": "/api/hospital",
-            "method": "POST", 
+            "method": "POST",
             "description": "진료과 및 위치 기반 병원 추천",
             "input": "{ departments: [...], location: {...} }",
             "output": "{ hospitals }"
         },
         {
             "path": "/llm/hospital",
-            "method": "POST", 
+            "method": "POST",
             "description": "진료과 및 위치 기반 LLM 병원 추천",
             "input": {
                 "address": "string (도로명 주소 또는 지번 주소)",
@@ -243,10 +256,7 @@ async def api_list():
             },
             "output": {
                 "predicted_deps": [
-                    {
-                        "department": "...",
-                        "score": "..."
-                    }
+                    {"department": "...", "score": "..."}
                 ],
                 "llm_summary": [
                     {
@@ -262,18 +272,14 @@ async def api_list():
             }
         }
     ]
-    
-    # 🆕 LLM 질병 API 엔드포인트 추가 (조건부)
+
     if LLM_DISEASE_AVAILABLE:
         endpoints.extend([
             {
                 "path": "/api/llm/disease",
                 "method": "POST",
                 "description": "EXAONE LLM + FAISS RAG 기반 AI 질병 진단",
-                "input_example": {
-                    "message": "머리가 아프고 열이 나요",
-                    "context": {}
-                },
+                "input_example": {"message": "머리가 아프고 열이 나요", "context": {}},
                 "output_example": {
                     "diagnosis": "감기",
                     "confidence": 0.85,
@@ -290,10 +296,7 @@ async def api_list():
                 "path": "/api/llm/disease/info",
                 "method": "POST",
                 "description": "EXAONE LLM 기반 질병 정보 상세 제공",
-                "input_example": {
-                    "message": "코로나19에 대해 설명해줘",
-                    "context": {}
-                },
+                "input_example": {"message": "코로나19에 대해 설명해줘", "context": {}},
                 "output_example": {
                     "diagnosis": "코로나19",
                     "confidence": 1.0,
@@ -307,12 +310,9 @@ async def api_list():
                 }
             }
         ])
-    
-    return {
-        "available_endpoints": endpoints
-    }
 
-# ========== 애플리케이션 시작 이벤트 ==========
+    return {"available_endpoints": endpoints}
+
 @app.on_event("startup")
 async def startup_event():
     """서버 시작 시 실행되는 함수 - 서비스 초기화"""
