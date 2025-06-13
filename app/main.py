@@ -36,7 +36,10 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",    # Next.js 개발 서버
         "http://127.0.0.1:3000",
-        "http://localhost:3001",    # 예비 포트
+        "http://localhost:3001",
+        "https://addmore.kr",
+        "https://13.209.213.26:3000"
+        "http://3.37.230.184"
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE","OPTIONS"],
