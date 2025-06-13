@@ -90,10 +90,10 @@ def recommend_medicine(req: RecommendationRequest):
     # 1) 증상 기반 추천 : 쿼리가 "증상은 ..." 으로 시작하면 증상 추천 로직 실행
     if query.startswith("증상은"):
         # 1-1) 연령대, 임신, 기저질환 정보가 모두 없으면 안내 메시지
-        if (not req.age_group or req.age_group.strip() == "") and not req.is_pregnant and not req.chronic_conditions:
+        valid_age_groups = ['소아', '청소년', '성인', '노인']
+        if req.age_group not in valid_age_groups:          
             return {
-                "message": "추가 정보가 필요합니다. 연령대, 임신 여부, 기저질환 정보를 입력해주세요.",
-                "need_conditions": True
+                "message": "추가 정보가 필요합니다. 연령대(소아, 청소년, 성인, 노인), 임신 여부(예, 아니요), 기저질환(, 로 구분해서 작성, 또는 없음) 정보를 입력해주세요."
             }
 
         symptom_text = query[len("증상은"):].strip()
