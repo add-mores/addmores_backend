@@ -8,6 +8,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_ollama import OllamaLLM
 import logging
+# 환경 변수 로드
 
 load_dotenv()
 # 로깅 설정
@@ -57,21 +58,48 @@ def exaone_chat(msgs: List[Dict[str, Any]]) -> str:
 def make_web_map_url(name: str) -> str:
     return f"https://map.naver.com/v5/search/{urllib.parse.quote(name)}"
 
-def generate_llm_reason(query: str, hospitals: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    prompt = {"query": query, "candidates": hospitals}
+def generate_llm_reason(
+    query: str,
+    hospitals: List[Dict[str, Any]],
+    predicted_deps: List[str],
+    user_location: str
+) -> List[Dict[str, Any]]:
+    prompt = {
+        "query": query,
+        "user_location": user_location,
+        "predicted_deps": predicted_deps,
+        "candidates": hospitals
+    }
     msgs = [
         {"role": "system", "content":
-         "다음은 증상과 병원 정보입니다. 각 병원이 왜 추천되었는지 간단하고 명확한 추천 사유를 JSON 배열로 생성하세요. "
-         "각 항목은 hos_nm과 reason 필드를 포함해야 합니다. 마크다운과 코드블록을 쓰지 마세요."},
+         "사용자 위치: {{user_location}}\n"
+         "예상 진료과: {{predicted_deps}}\n\n"
+         "아래는 사용자 증상(query)과 후보 병원(candidates) 정보입니다.\n"
+         "- query: 증상 질의\n"
+         "- candidates: [{ hos_nm, add, deps, distance, lat, lon }, ...]\n\n"
+         "각 병원이 왜 추천되는지, 반드시 ‘예상 진료과’ 관점에서 간단명료하게 설명하세요.\n"
+         "결과는 JSON 배열로만, 각 객체는 hos_nm과 reason 필드만 포함합니다.\n"
+         "마크다운·코드블록·추가 텍스트는 절대 사용하지 마세요."},
         {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)}
     ]
     try:
         raw = exaone_chat(msgs).strip()
-        # print("🧠 LLM 응답 원문:\n", raw)
         logger.info(f"🧠 LLM 응답 원문:\n{raw}")
+
+        # ```json``` 코드블록 제거
         clean = re.sub(r"```(?:json)?\s*(.*?)\s*```", r"\1", raw, flags=re.S).strip()
-        if not clean.startswith("["): raise ValueError("응답이 JSON 배열 아님")
-        parsed = json.loads(clean)
+
+        # 배열 부분만 추출
+        start = clean.find("[")
+        end   = clean.rfind("]") + 1
+        if start == -1 or end == 0:
+            raise ValueError("응답에 JSON 배열이 포함되어 있지 않습니다")
+        json_str = clean[start:end]
+
+        # JSON 파싱
+        parsed = json.loads(json_str)
+
+        # 각 병원에 추가 정보 채우기
         hospi_dict = {c["hos_nm"]: c for c in hospitals}
         for item in parsed:
             h = hospi_dict.get(item.get("hos_nm"))
@@ -82,9 +110,10 @@ def generate_llm_reason(query: str, hospitals: List[Dict[str, Any]]) -> List[Dic
                 item.setdefault("opening_hours", "운영시간 정보 없음")
                 item.setdefault("map_url", make_web_map_url(item["hos_nm"]))
         return parsed
+
     except Exception as e:
-        # print("❌ LLM 요약 실패:", e)/
         logger.error(f"❌ LLM 요약 실패: {e}")
+        # fallback: 기본 메시지로 반환
         return [
             {
                 "hos_nm": h["hos_nm"],
@@ -110,7 +139,11 @@ class FilterRequest(BaseModel):
 def recommend(req: FilterRequest):
     # 수정: lat/​lon이 넘어오면 그대로 쓰고,
     #     address만 넘어오면 geocode_address() 호출
-    if req.lat is not None and req.lon is not None:
+    if (
+        req.lat is not None
+        and req.lon is not None
+        and not (req.lat == 0.0 and req.lon == 0.0)
+    ):
         lat, lon = req.lat, req.lon
     elif req.address:
         geo = geocode_address(req.address)
@@ -180,8 +213,15 @@ def recommend(req: FilterRequest):
                     "lat": lat2,
                     "lon": lon2
                 })
+    # 호출할 때 predicted_deps와 user_location 함께 전달
+    user_loc_str = req.address or f"{req.lat},{req.lon}"
+    summary = generate_llm_reason(
+        req.query,
+        cands,
+        predicted_deps=deps,
+        user_location=user_loc_str
+    )[:3]
 
-    summary = generate_llm_reason(req.query, cands)[:3]
     # print(f"✅ 추천 병원 {len(summary)}개 생성 완료")
     logger.info(f"✅ 추천 병원 {len(summary)}개 생성 완료")
 
