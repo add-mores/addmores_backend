@@ -1,6 +1,6 @@
 from fastapi import FastAPI, APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import os, json, requests, urllib.parse, re, ast
 import numpy as np
 from dotenv import load_dotenv
@@ -99,14 +99,24 @@ def generate_llm_reason(query: str, hospitals: List[Dict[str, Any]]) -> List[Dic
         ]
 
 class FilterRequest(BaseModel):
-    address: str
+    # 프론트에서 주소(address) 또는 GPS(lat, lon) 중 하나만 보내도 되도록
+    address: Optional[str] = None
+    lat: Optional[float] = None
+    lon: Optional[float] = None
     query: str
     radius: float = 1.0
 
 @router.post("/llm/hospital")
 def recommend(req: FilterRequest):
-    geo = geocode_address(req.address)
-    lat, lon = geo["lat"], geo["lon"]
+    # 수정: lat/​lon이 넘어오면 그대로 쓰고,
+    #     address만 넘어오면 geocode_address() 호출
+    if req.lat is not None and req.lon is not None:
+        lat, lon = req.lat, req.lon
+    elif req.address:
+        geo = geocode_address(req.address)
+        lat, lon = geo["lat"], geo["lon"]
+    else:
+        raise HTTPException(400, "address 또는 lat, lon 중 하나는 반드시 필요합니다.")
 
     messages = [
         {"role": "system", "content": "증상에서 예상 진료과를 JSON 배열로만 출력하세요. 각 항목은 {'department': ..., 'score': ...} 형식. 마크다운 없이."},
