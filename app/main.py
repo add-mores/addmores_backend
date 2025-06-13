@@ -16,7 +16,7 @@ from app.api import hospital_api    # 병원 API (api/hospital)
 
 #from app.api import dis_llm_api    # 질병 llm API (llm/disease)
 from app.api import medi_llm_api    # 의약품 llm API (llm/medicine)
-#from app.api import hospi_llm_api    # 병원 llm API (llm/hospital)
+from app.api import hospi_llm_api    # 병원 llm API (llm/hospital)
 
 load_dotenv()
 
@@ -84,11 +84,11 @@ app.include_router(
     prefix="",  # /api/hospital 그대로 사용
 )
 
-# app.include_router(
-#     hospi_llm_api.router, 
-#     tags=["병원 추천 LLM"],
-#     prefix="",  # /llm/hospital 그대로 사용
-# )
+app.include_router(
+    hospi_llm_api.router, 
+    tags=["병원 추천 LLM"],
+    prefix="",  # /llm/hospital 그대로 사용
+)
 
 
 # 루트 엔드포인트
@@ -158,7 +158,7 @@ async def api_list():
             {
                 "path": "/llm/medicine",
                 "method": "POST",
-                "description": "LLM 기반 증상 기반 의약품 추천",
+                "description": "증상 기반 LLM 의약품 추천",
                 "input": "{ query: '증상 텍스트', age_group?: '성인', is_pregnant?: bool, chronic_conditions?: [...] }",
                 "output": "{ recommended_diseases: [...], explanation: 'LLM 설명 텍스트' }"
             },
@@ -169,9 +169,38 @@ async def api_list():
                 "input": "{ departments: [...], location: {...} }",
                 "output": "{ hospitals }"
             }
+            ,
+            {
+                "path": "/llm/hospital",
+                "method": "POST", 
+                "description": "진료과 및 위치 기반 LLM 병원 추천",
+                "input": {
+                    "address": "string (도로명 주소 또는 지번 주소)",
+                    "symptom": "string (자연어 증상 설명)",
+                    "radius": "number (단위: km, 기본값: 1.0)"
+                },
+                "output": {
+                "predicted_deps": [
+                    {
+                    "department": "...",
+                    "score": "..."
+                    }
+                ],
+                "llm_summary": [
+                    {
+                    "hos_nm": "...",
+                    "reason": "...",
+                    "add": "...",
+                    "deps": ["..."],
+                    "distance": "...",
+                    "opening_hours": "...",
+                    "map_url": "..."
+                    }
+                ]
+                }
+            }
         ]
     }
-
 # 애플리케이션 시작 이벤트
 @app.on_event("startup")
 async def startup_event():
