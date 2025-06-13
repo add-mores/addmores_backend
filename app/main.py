@@ -14,6 +14,9 @@ from app.api import disease_api     # 질병 API (api/disease)
 from app.api import medicine_api  # 의약품 API (api/medicine)
 from app.api import hospital_api    # 병원 API (api/hospital)
 
+#from app.api import dis_llm_api    # 질병 llm API (llm/disease)
+from app.api import medi_llm_api    # 의약품 llm API (llm/medicine)
+#from app.api import hospi_llm_api    # 병원 llm API (llm/hospital)
 
 load_dotenv()
 
@@ -53,9 +56,15 @@ app.include_router(
 
 app.include_router(
     disease_api.router, 
-    tags=["질병 추천"],
+    tags=["질병 예측"],
     prefix="",  # /api/disease 그대로 사용
 )
+
+# app.include_router(
+#     dis_llm_api.router, 
+#     tags=["질병 예측 LLM"],
+#     prefix="",  # /llm/disease 그대로 사용
+# )
 
 app.include_router(
     medicine_api.router, 
@@ -64,10 +73,23 @@ app.include_router(
 )
 
 app.include_router(
+    medi_llm_api.router, 
+    tags=["의약품 추천 LLM"],
+    prefix="",  # /llm/medicine 그대로 사용
+)
+
+app.include_router(
     hospital_api.router, 
     tags=["병원 추천"],
     prefix="",  # /api/hospital 그대로 사용
 )
+
+# app.include_router(
+#     hospi_llm_api.router, 
+#     tags=["병원 추천 LLM"],
+#     prefix="",  # /llm/hospital 그대로 사용
+# )
+
 
 # 루트 엔드포인트
 @app.get("/")
@@ -81,8 +103,11 @@ async def root():
         "endpoints": {
             "증상 처리": "/api/insert",
             "질병 추천": "/api/disease", 
+            "질병 추천 llm": "/llm/disease",
             "의약품 추천": "/api/medicine",
+            "의약품 추천 llm": "/llm/medicine",
             "병원 추천": "/api/hospital",
+            "병원 추천 llm": "/llm/hospital",
             "API 문서": "/docs",
             "ReDoc 문서": "/redoc"
         }
@@ -126,9 +151,16 @@ async def api_list():
             {
                 "path": "/api/medicine", 
                 "method": "POST",
-                "description": "질병명 기반 의약품 추천",
+                "description": "증상 기반 의약품 추천",
                 "input": "{ disease_names: [...] }",
                 "output": "{ medications }"
+            },
+            {
+                "path": "/llm/medicine",
+                "method": "POST",
+                "description": "LLM 기반 증상 기반 의약품 추천",
+                "input": "{ query: '증상 텍스트', age_group?: '성인', is_pregnant?: bool, chronic_conditions?: [...] }",
+                "output": "{ recommended_diseases: [...], explanation: 'LLM 설명 텍스트' }"
             },
             {
                 "path": "/api/hospital",
