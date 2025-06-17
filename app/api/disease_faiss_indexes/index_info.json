@@ -1,0 +1,23 @@
+{
+  "created_at": "2025-06-12T19:01:29.692177",
+  "version": "1.0.0",
+  "embedding_model": "madatnlp/km-bert",
+  "indexes": {
+    "disease_key": {
+      "file": "disease_key_index.index",
+      "count": 2671
+    },
+    "disease_full": {
+      "file": "disease_full_index.index",
+      "count": 2671
+    },
+    "rag_qa": {
+      "file": "rag_qa_index.index",
+      "count": 693
+    },
+    "rag_medical": {
+      "file": "rag_medical_index.index",
+      "count": 10123
+    }
+  }
+}

@@ -1,11 +1,11 @@
 [project]
 name = "backend"
-version = "0.3.0"
+version = "0.5.0"
 description = "Default template for PDM package"
 authors = [
     {name = "jiwon1118", email = "b23386585@gmail.com"},
 ]
-dependencies = ["pandas>=2.2.3", "requests>=2.32.3", "python-dotenv>=1.1.0", "psycopg>=3.2.7", "jupyterlab>=4.4.1", "pytest>=8.3.5", "folium>=0.19.5", "geopandas>=1.0.1", "psycopg2>=2.9.10", "konlpy>=0.6.0", "sqlalchemy>=2.0.40", "streamlit-folium>=0.25.0", "streamlit-js-eval>=0.1.7", "tqdm>=4.67.1", "psycopg2-binary>=2.9.10", "fastapi>=0.115.12", "uvicorn>=0.34.2", "scikit-learn>=1.6.1"]
+dependencies = ["pandas>=2.2.3", "requests>=2.32.3", "python-dotenv>=1.1.0", "psycopg>=3.2.7", "jupyterlab>=4.4.1", "pytest>=8.3.5", "folium>=0.19.5", "geopandas>=1.0.1", "psycopg2>=2.9.10", "konlpy>=0.6.0", "sqlalchemy>=2.0.40", "streamlit-folium>=0.25.0", "streamlit-js-eval>=0.1.7", "tqdm>=4.67.1", "psycopg2-binary>=2.9.10", "fastapi>=0.115.12", "uvicorn>=0.34.2", "scikit-learn>=1.6.1", "ollama>=0.5.1", "langchain-community>=0.3.25", "langchain>=0.3.25", "sentence-transformers>=4.1.0", "faiss-cpu>=1.11.0", "langchain-ollama>=0.3.3", "langchain-huggingface>=0.3.0"]
 requires-python = ">=3.12"
 readme = "README.md"
 license = {text = "MIT"}
