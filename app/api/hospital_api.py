@@ -35,9 +35,9 @@ class FilterRequest(BaseModel):
 @router.post("/api/hospital")
 def filter_hospitals(req: FilterRequest):
     query = """
-    SELECT hos_nm, hos_type, pv, city, add, deps, lat, lon
+    SELECT hos_nm, hos_type, pv, city, add, deps, lat, lon, emer, emer_phone
     FROM testhosp
-"""
+    """
     df = pd.read_sql(query, engine).dropna(subset=["lat", "lon"])
     df["distance"] = haversine(req.lat, req.lon, df["lat"].values, df["lon"].values)
 
@@ -58,7 +58,9 @@ def filter_hospitals(req: FilterRequest):
             "deps": row["deps"],
             "lat": row["lat"],
             "lon": row["lon"],
-            "distance": round(row["distance"], 2)
+            "distance": round(row["distance"], 2),
+            "emer": row.get("emer", ""),  # ✅ 추가
+            "emer_phone": row.get("emer_phone", "")  # ✅ 추가
         })
     return {"recommendations": records}
 
