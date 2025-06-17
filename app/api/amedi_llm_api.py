@@ -16,7 +16,7 @@ class QueryRequest(BaseModel):
 # 임베딩 모델 및 벡터스토어 로딩 (앱 실행 시 1회)
 embedding_model_name = "madatnlp/km-bert"
 embeddings = HuggingFaceEmbeddings(model_name=embedding_model_name)
-vectorstore = FAISS.load_local("faiss_store", embeddings, allow_dangerous_deserialization=True)
+vectorstore = FAISS.load_local("./app/api/faiss_store", embeddings, allow_dangerous_deserialization=True)
 
 # RAG 함수
 def rag_answer(question: str) -> str:

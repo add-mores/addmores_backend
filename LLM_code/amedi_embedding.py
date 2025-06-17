@@ -16,19 +16,28 @@ def load_csv_as_documents(file_path, file_label, chunk_size=500, chunk_overlap=5
         )
         docs.append(doc)
 
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap
+    )
     return text_splitter.split_documents(docs)
 
-# 데이터 로드 및 문서화
-dis_docs = load_csv_as_documents("docs/dis_prototype.csv", "질병")
-med_docs = load_csv_as_documents("docs/testmed.csv", "의약품")
-all_docs = dis_docs + med_docs
+def build_vectorstore():
+    # 데이터 로드 및 문서화
+    dis_docs = load_csv_as_documents("LLM_code/dis_prototype.csv", "질병")
+    med_docs = load_csv_as_documents("LLM_code/testmed.csv", "의약품")
+    all_docs = dis_docs + med_docs
 
-# 임베딩 및 벡터스토어 생성
-embedding_model_name = "madatnlp/km-bert"
-embeddings = HuggingFaceEmbeddings(model_name=embedding_model_name)
-vectorstore = FAISS.from_documents(all_docs, embeddings)
+    # 임베딩 및 벡터스토어 생성
+    embedding_model_name = "madatnlp/km-bert"
+    embeddings = HuggingFaceEmbeddings(model_name=embedding_model_name)
+    vectorstore = FAISS.from_documents(all_docs, embeddings)
 
-# 디렉터리 생성
-os.makedirs("faiss_store", exist_ok=True)
-vectorstore.save_local("faiss_store")
+    # 저장 경로: app/api/faiss_store
+    save_path = "app/api/faiss_store"
+    os.makedirs(save_path, exist_ok=True)
+    vectorstore.save_local(save_path)
+    print(f"✅ FAISS 벡터스토어가 '{save_path}' 경로에 저장되었습니다.")
+
+if __name__ == "__main__":
+    build_vectorstore()
