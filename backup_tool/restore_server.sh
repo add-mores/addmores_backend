@@ -27,7 +27,7 @@ if [ "$MODE" == "-d" ]; then
   createdb -h $RDS_HOST -U $RDS_USER $RDS_DB
 fi
 
-pg_restore -h $RDS_HOST -U $RDS_USER -d $RDS_DB $DUMP_FILE
+pg_restore --no-owner -h $RDS_HOST -U $RDS_USER -d $RDS_DB $DUMP_FILE
 
 # 정리
 rm $DUMP_FILE
