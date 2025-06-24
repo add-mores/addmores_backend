@@ -21,7 +21,7 @@ vectorstore = FAISS.load_local("./app/api/faiss_store", embeddings, allow_danger
 # RAG 함수
 def rag_answer(question: str) -> str:
     retriever = vectorstore.as_retriever()
-    llm = Ollama(model="exaone3.5:7.8b", temperature=0.1, num_predict=1024)
+    llm = Ollama(model="exaone3.5:7.8b", temperature=0.3, num_predict=1024)
 
     system_template = (
         "너는 전문 의료 정보 비서야.\n"
