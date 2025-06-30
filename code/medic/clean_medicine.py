@@ -1,7 +1,7 @@
 import pandas as pd
 import re
 
-# 기존 CSV 파일 불러오기 (파일 경로 바꾸기)
+# 기존 CSV 파일 불러오기 (본인 파일 경로로 바꾸기)
 df = pd.read_csv("~/temp/add-more/data/medicine_info_all.csv")
 
 # 원하는 컬럼만 선택
