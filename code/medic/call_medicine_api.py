@@ -2,7 +2,7 @@ import requests
 import pandas as pd
 import time
 
-API_KEY = "JEfO7+ak/zek1eGZYyaelPf6YBUj2KndPEaE2r6u3Ps87lmtYxLRliaCYt53+4A5wYIQFuA8kFo8amGf205ekg=="
+# API_KEY = ""
 url = 'http://apis.data.go.kr/1471000/DrbEasyDrugInfoService/getDrbEasyDrugList'
 
 all_items = []
