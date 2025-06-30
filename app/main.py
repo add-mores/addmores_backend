@@ -40,6 +40,10 @@ except ImportError as e:
     print(f"⚠️ LLM 질병 API 모듈을 찾을 수 없습니다: {e}")
     LLM_DISEASE_AVAILABLE = False
 
+# ========== 질병 + 의약품 통합 LLM API 라우터 import ==========
+from app.api import amedi_llm_api # 통합 LLM API (llm/amedi)
+
+
 # 환경변수 로드
 load_dotenv()
 
@@ -62,10 +66,11 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",    # Next.js 개발 서버
         "http://127.0.0.1:3000",
-        "http://localhost:3001",    # 예비 포트
+        "http://localhost:3001",
+        "https://dev.addmore.kr",# 예비 포트
     ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -116,6 +121,12 @@ app.include_router(
     prefix="",  # /llm/hospital 그대로 사용
 )
 
+app.include_router(
+    amedi_llm_api.router, 
+    tags=["통합 LLM"],
+    prefix="",  
+)
+
 if LLM_DISEASE_AVAILABLE:
     app.include_router(
         disease_llm_router,
@@ -138,6 +149,7 @@ async def root():
         "의약품 추천 LLM": "/llm/medicine",
         "병원 추천": "/api/hospital",
         "병원 추천 LLM": "/llm/hospital",
+        "통합 예측 및 추천 LLM": "/llm/amedi",
         "API 문서": "/docs",
         "ReDoc 문서": "/redoc"
     }
@@ -161,6 +173,7 @@ async def root():
             "의약품 추천 llm": "/llm/medicine",
             "병원 추천": "/api/hospital",
             "병원 추천 llm": "/llm/hospital",
+            "통합 예측 및 추천 LLM": "/llm/amedi",
             "API 문서": "/docs",
             "ReDoc 문서": "/redoc"
         }
