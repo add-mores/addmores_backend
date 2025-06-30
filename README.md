@@ -104,8 +104,11 @@
 
 ---
 
-## 🛠️ 로컬 실행 가이드
-[addmores_front](https://github.com/add-mores/frontend)
+##  로컬 실행 가이드
+<a href="https://github.com/add-mores/frontend" target="_blank">
+  <img src="https://img.shields.io/badge/GitHub-Frontend-black?logo=github&style=for-the-badge" alt="GitHub Frontend">
+</a>
+
 ```bash
 # 백엔드
 cd backend
@@ -127,10 +130,10 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 
 ---
 
-## 📄 라이선스
+##  라이선스
 
 본 프로젝트는 교육 및 비영리 목적의 사용을 허용하며, 데이터 출처 표기와 AI 응답에 대한 면책 조항을 포함합니다.
 
 ---
 
-> 👨‍⚕️ AmedI는 **의료 전문가를 대체하지 않으며**, 정확한 진단 및 치료를 위해 병원 방문을 권장합니다.
+>  AmedI는 **의료 전문가를 대체하지 않으며**, 정확한 진단 및 치료를 위해 병원 방문을 권장합니다.
